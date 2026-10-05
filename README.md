@@ -125,9 +125,11 @@ The file has no gold labels. Each `decision` row stores the choice, the probabil
 
 Close Cursor and other large apps first. The 0.8B and 2B models run first. On this laptop the 4B checkpoint can take a couple of hours for all 50 tickets. Ctrl+C keeps every row already written. A missing checkpoint is downloaded before that model loads.
 
+Each run is one command. `-Laya` is required on that command, and its value is the path to the Laya project. `-Models` is optional and belongs on the same command. Leave it off to score `0.8b`, `2b`, and `4b-v2`. From this folder, run one of these:
+
 ```powershell
-.\Compare-Laya.ps1 -Laya C:\Users\PaulYardley\PycharmProjects\laya-ollama-demo
 .\Compare-Laya.ps1 -Laya C:\Users\PaulYardley\PycharmProjects\laya-ollama-demo -Models 0.8b,2b
+.\Compare-Laya.ps1 -Laya C:\Users\PaulYardley\PycharmProjects\laya-ollama-demo
 ```
 
 The output is `results/laya-compare-<timestamp>.jsonl`, one JSON object per line. A `decision` row stores the message, the label, Laya's choice, Decider's choice and probabilities, and the two comparisons. A `summary` row stores that model's count of label matches, count of Laya matches, and the confusion counts. Rows of that table are the label. Columns are `auto_reply`, `escalate_to_human`, and `ignore`.

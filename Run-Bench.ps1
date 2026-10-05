@@ -3,7 +3,7 @@
 #   .\Run-Bench.ps1
 #   .\Run-Bench.ps1 -Models 0.8b,2b
 param(
-    [string]$Models
+    [string[]]$Models
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,7 +15,7 @@ if (-not (Test-Path $Python)) {
 
 $Arguments = @("bench\run_bench.py")
 if ($Models) {
-    $Arguments += @("--models", $Models)
+    $Arguments += @("--models", ($Models -join ","))
 }
 & $Python @Arguments
 exit $LASTEXITCODE

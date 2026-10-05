@@ -5,7 +5,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$Laya,
-    [string]$Models
+    [string[]]$Models
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,7 +20,7 @@ if (-not (Test-Path $Laya)) {
 
 $Arguments = @("bench\compare_laya.py", "--laya", $Laya)
 if ($Models) {
-    $Arguments += @("--models", $Models)
+    $Arguments += @("--models", ($Models -join ","))
 }
 & $Python @Arguments
 exit $LASTEXITCODE
