@@ -119,6 +119,19 @@ A missing checkpoint is downloaded from its pinned revision before that model is
 
 The file has no gold labels. Each `decision` row stores the choice, the probabilities, `usage.input_tokens`, `request_ms`, and the process memory. A `model` row stores load time, dtype, and temperature. Bring `results/bench-*.jsonl` back and ask for a report from that file.
 
+## Compare with Laya on 50 labelled tickets
+
+`Compare-Laya.ps1` asks each catalog model the three-way question that won the [Laya criteria search](https://github.com/pyardley/laya-ollama-demo): a how-to or FAQ, a fault or refund or account takeover, or not a support request. The 50 messages and Laya's choices come from that project. Laya's saved run, `experiments/results/baseline_argmax.json`, is that wording and gets 41 of the 50 labels right. This script does not call Laya again. It scores Decider on the same messages and records whether the choice matches Laya and whether it matches the label.
+
+Close Cursor and other large apps first. The 0.8B and 2B models run first. On this laptop the 4B checkpoint can take a couple of hours for all 50 tickets. Ctrl+C keeps every row already written. A missing checkpoint is downloaded before that model loads.
+
+```powershell
+.\Compare-Laya.ps1 -Laya C:\Users\PaulYardley\PycharmProjects\laya-ollama-demo
+.\Compare-Laya.ps1 -Laya C:\Users\PaulYardley\PycharmProjects\laya-ollama-demo -Models 0.8b,2b
+```
+
+The output is `results/laya-compare-<timestamp>.jsonl`, one JSON object per line. A `decision` row stores the message, the label, Laya's choice, Decider's choice and probabilities, and the two comparisons. A `summary` row stores that model's count of label matches, count of Laya matches, and the confusion counts. Rows of that table are the label. Columns are `auto_reply`, `escalate_to_human`, and `ignore`.
+
 ## Use the demo
 
 Pick **Duplicate charge**, **App crash**, or **Locked out**, or edit the ticket text. **Ask Decider** sends the ticket and the refund policy as the state, and asks three questions:
