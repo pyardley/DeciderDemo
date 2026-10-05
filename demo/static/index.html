@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Decider 4B · v2</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Mapika · one forward pass · no generated text</p>
+      <h1>Decider 4B · v2</h1>
+    </div>
+    <p id="status" class="status" data-state="loading">Loading weights…</p>
+  </header>
+
+  <main>
+    <section class="desk">
+      <div class="scenarios" id="scenarios" role="tablist" aria-label="Sample tickets"></div>
+      <label class="field">
+        <span>Ticket</span>
+        <textarea id="ticket" rows="7" spellcheck="false"></textarea>
+      </label>
+      <p class="policy" id="policy"></p>
+      <button id="ask" type="button" disabled>Ask Decider</button>
+      <p id="note" class="note"></p>
+    </section>
+
+    <section class="answers" aria-live="polite">
+      <div class="answers-head">
+        <h2>Answers</h2>
+        <p id="meta" class="meta">Three typed questions, scored together.</p>
+      </div>
+      <div id="results" class="results">
+        <p class="empty">Pick a ticket and ask. Each bar is the probability of an option you defined. Nothing is generated outside that list.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Checkpoint <code id="revision"></code> from
+      <a href="https://huggingface.co/Mapika/decider-4b">Mapika/decider-4b</a>,
+      the pin Jev Arena uses for this entrant.
+      Ollama cannot load it: the model is served by Decider, not a GGUF chat model.
+    </p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
