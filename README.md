@@ -110,7 +110,7 @@ On this 16 GB laptop the 4B checkpoint in bf16 does not stay fully resident, and
 
 `Run-Bench.ps1` loads each catalog model in its own process, asks the same three tickets the page asks, and appends one JSON object per line to `results/bench-<timestamp>.jsonl`. Close Cursor and other large apps first so the process can keep the weights in RAM. The 4B checkpoint can take several minutes per ticket on this machine. The 0.8B and 2B models run first. Ctrl+C keeps every row already written.
 
-Download any missing checkpoint before the run (`.\Start-Demo.ps1 -Model 2b`, and the same for `0.8b` or `4b-v2`). Then:
+A missing checkpoint is downloaded from its pinned revision before that model is loaded. The 2B weights are about 3.8 GB.
 
 ```powershell
 .\Run-Bench.ps1

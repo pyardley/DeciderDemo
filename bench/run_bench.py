@@ -197,11 +197,26 @@ def summarize(answers: dict) -> dict:
     return summary
 
 
+def ensure_weights(spec: dict) -> tuple[Path, float | None]:
+    """Return the safetensors path, downloading the pinned revision when it is absent."""
+    folder = ROOT / "models" / spec["directory"]
+    weights = folder / "model.safetensors"
+    if weights.is_file():
+        return weights, None
+    print(f"Downloading {spec['repo']} @ {spec['revision'][:12]}...", flush=True)
+    started = time.perf_counter()
+    from huggingface_hub import snapshot_download
+
+    snapshot_download(spec["repo"], revision=spec["revision"], local_dir=str(folder))
+    if not weights.is_file():
+        raise FileNotFoundError(f"Download of {spec['repo']} finished without {weights.name}")
+    return weights, round(time.perf_counter() - started, 3)
+
+
 def score_model(model_id: str, spec: dict, out: Path, repeat: int) -> int:
     import torch
     from decider.infer import Decider
 
-    weights = ROOT / "models" / spec["directory"] / "model.safetensors"
     header = {
         "type": "model",
         "at": now(),
@@ -211,13 +226,17 @@ def score_model(model_id: str, spec: dict, out: Path, repeat: int) -> int:
         "revision": spec["revision"],
         "device": spec.get("device", "cpu"),
         "dtype": spec.get("dtype", "float32"),
-        "weights": str(weights),
     }
-    if not weights.is_file():
-        header["error"] = f"Missing {weights}. Run .\\Start-Demo.ps1 -Model {model_id} once to download it."
+    try:
+        weights, download_s = ensure_weights(spec)
+    except Exception:
+        header["error"] = traceback.format_exc()
         append(out, header)
         print(header["error"], flush=True)
         return 1
+    header["weights"] = str(weights)
+    if download_s is not None:
+        header["download_s"] = download_s
 
     print(f"Loading {spec['name']} ({spec.get('dtype')}, {spec.get('device', 'cpu')})...", flush=True)
     started = time.perf_counter()
