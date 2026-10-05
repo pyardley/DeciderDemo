@@ -52,8 +52,11 @@ const results = document.querySelector("#results");
 const meta = document.querySelector("#meta");
 const note = document.querySelector("#note");
 const revision = document.querySelector("#revision");
+const modelName = document.querySelector("#model-name");
+const modelLink = document.querySelector("#model-link");
 
 let ready = false;
+let dtype = "";
 let selected = SCENARIOS[0].id;
 
 policy.textContent = POLICY;
@@ -145,6 +148,15 @@ async function refresh() {
     const response = await fetch("/api/health");
     const health = await response.json();
     revision.textContent = (health.revision || "").slice(0, 12);
+    if (health.name) {
+      modelName.textContent = health.name;
+      document.title = health.name;
+    }
+    if (health.repo) {
+      modelLink.href = `https://huggingface.co/${health.repo}`;
+      modelLink.textContent = health.repo;
+    }
+    if (health.dtype) dtype = health.dtype;
     if (health.status === "ready") {
       ready = true;
       ask.disabled = false;
@@ -167,7 +179,9 @@ async function refresh() {
 ask.addEventListener("click", async () => {
   if (!ready) return;
   ask.disabled = true;
-  note.textContent = "Scoring on CPU. On this laptop a pass can take a few minutes.";
+  note.textContent = dtype === "bfloat16"
+    ? "Scoring on CPU in bf16. On this laptop a pass can take a few minutes."
+    : "Scoring on CPU.";
   meta.textContent = "Scoring…";
   try {
     const response = await fetch("/api/systemone", {

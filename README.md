@@ -1,17 +1,17 @@
-# Decider 4B · v2 demo
+# Decider demo
 
-A one-page desk for [Mapika's Decider 4B](https://huggingface.co/Mapika/decider-4b), revision `v2`. You paste a support ticket. The model returns a probability for every option on three questions: which team, whether a refund was asked for, and how urgent it is. It does not write a reply.
+A one-page desk for [Mapika's Decider](https://huggingface.co/Mapika) models. You paste a support ticket. The model returns a probability for every option on three questions: which team, whether a refund was asked for, and how urgent it is. It does not write a reply.
 
-[Jev Arena](https://github.com/theaiautomators/jev-arena) evaluates this checkpoint under the name **Decider 4B · v2**. The pin is `49564ddcfccafb6db563eb757c1d41e6c78dcb56` in `arena/registry.py`. This demo loads that same commit. Decider is a one-pass decision model. Its weights are not in the Ollama library, so this demo serves them with Decider's own Python runtime.
+The demo starts on **Decider 4B · v2**, the checkpoint [Jev Arena](https://github.com/theaiautomators/jev-arena) evaluates under that name (`49564ddcfccafb6db563eb757c1d41e6c78dcb56` in `arena/registry.py`). Decider is a one-pass decision model. Its weights are not in the Ollama library, so this demo serves them with Decider's own Python runtime.
 
 ## Requirements
 
 - Windows with PowerShell
 - [uv](https://docs.astral.sh/uv/) on `PATH`
-- About 12 GB of free disk space (8.4 GB of weights, plus the Python environment)
-- 32 GB of RAM if you want the model, Windows, and a browser resident together
+- Free disk for the checkpoint you select: 8.4 GB for 4B, 3.8 GB for 2B, or 1.4 GB for 0.8B, plus about 2 GB for the Python environment
+- For the 4B checkpoint in float32, 32 GB of RAM. This demo loads that checkpoint in bf16 instead, about 9.4 GB, which still pages on a 16 GB machine
 
-The published weights are 8.4 GB in bf16. The demo process holds about 9.4 GB once they are loaded. A 4 GB GPU cannot hold them, so the demo runs on CPU in bf16. The library's CPU default is float32, about 17 GB, which does not fit in 16 GB of RAM. On a 16 GB machine the weights spill into the page file and a decision can take a few minutes.
+A 4 GB GPU cannot hold the 4B or 2B weights. The 0.8B file is 1.4 GB. This install uses the CPU build of PyTorch, so every model here runs on CPU. The library's fast CPU dtype is float32. The 2B and 0.8B entries use it. The 4B entry uses bf16 because the float32 copy is about 17 GB and does not fit in 16 GB of RAM.
 
 ## Install uv
 
@@ -39,14 +39,30 @@ The script does four things:
 
 1. Creates `.venv` with Python 3.12, downloading that interpreter through uv if it is not already installed.
 2. Installs the CPU build of PyTorch from `https://download.pytorch.org/whl/cpu`, then `decider-ai[serve]`.
-3. Downloads `Mapika/decider-4b` at revision `49564ddcfccafb6db563eb757c1d41e6c78dcb56` into `models/decider-4b-v2` (about 8.4 GB). A later run skips this when `model.safetensors` is already there.
-4. Starts the demo on http://127.0.0.1:8787 and opens that address. The first start spends a minute or two loading the weights. The page stays on **Loading weights…** until the model is ready.
+3. Downloads the active checkpoint from `demo/models.json` into `models/`. A later run skips this when that model's `model.safetensors` is already there.
+4. Starts the demo on http://127.0.0.1:8787 and opens that address. The page stays on **Loading weights…** until the model is ready.
 
 Leave that PowerShell window open. Closing it stops the server.
 
+## Change the model
+
+The catalog is `demo/models.json`. `active` selects the checkpoint. The ids are `4b-v2`, `2b`, and `0.8b`.
+
+Stop the running demo with Ctrl+C, then start the one you want:
+
+```powershell
+.\Start-Demo.ps1 -Model 2b
+.\Start-Demo.ps1 -Model 0.8b
+.\Start-Demo.ps1 -Model 4b-v2
+```
+
+`-Model` writes that id into `active` and downloads the weights if they are not already in `models/`. You can edit `active` yourself instead; the next `.\Start-Demo.ps1` uses whatever is there.
+
+Each entry sets `repo`, `revision`, `directory`, `device`, and `dtype`. `device` stays `cpu` with the CPU build of PyTorch installed by this demo. `dtype` is `float32` for 2B and 0.8B, and `bfloat16` for 4B.
+
 ## Install by hand
 
-Use this when you want to run the same steps yourself.
+Use this when you want to run the same steps yourself. The revision and folder below are the default 4B pin. For another model, copy `repo`, `revision`, and `directory` from `demo/models.json`.
 
 ```powershell
 uv venv --python 3.12 .venv
@@ -66,6 +82,29 @@ snapshot_download(
 ```
 
 Then open http://127.0.0.1:8787.
+
+## Models
+
+Figures are from the publishers' model cards, measured on their hardware. GPU times are on an NVIDIA B300. They are not times for this laptop.
+
+[Decider 2B v11](https://huggingface.co/Mapika/decider-2b) and [Decider 4B v2](https://huggingface.co/Mapika/decider-4b) share one rebuilt regression set: 67 in-task tasks and 28 held-out tasks. [Decider 0.8B](https://huggingface.co/Mapika/decider-0.8b) was scored on an earlier 93-task protocol (69 in-task, 24 held-out). On that older protocol the 2B scored 0.809 in-task and 0.739 held-out, against the 0.8B's 0.776 and 0.707.
+
+| | Decider 0.8B | Decider 2B v11 | Decider 4B · v2 |
+| --- | --- | --- | --- |
+| Catalog id | `0.8b` | `2b` | `4b-v2` |
+| Weights | 1.4 GB bf16 | 3.8 GB bf16 | 8.4 GB bf16 |
+| Dtype in this demo | float32, about 3 GB | float32, about 8 GB | bf16, about 9.4 GB |
+| Regression accuracy, in-task / held-out | 0.776 / 0.707 | 0.802 / 0.752 | 0.824 / 0.779 |
+| Regression ECE, in-task / held-out | 0.032 / 0.096 | 0.038 / 0.083 | 0.041 / 0.080 |
+| JevBench public, easy / standard / hard | — | 1.000 / 0.889 / 0.577 | 1.000 / 0.986 / 0.676 |
+| JevBench hard-tier calibration error | — | 0.175 | 0.071 |
+| Bespoke public suite, macro / micro | — | 0.706 / 0.711 | 0.773 / 0.781 |
+| Live MiniWoB++, sampled, 22 tasks | — | 90.3% | 88.1% |
+| Publisher GPU time | about 1.5× the 2B on its regression run | 4 ms with CUDA graphs | 5.2 ms with CUDA graphs, 35 ms eager |
+
+The 0.8B card does not publish JevBench, Bespoke, or MiniWoB numbers. On the tasks it does share with the 2B, short routing, yes/no, and JSON lookups stay within about one to four points, and the larger gaps are knowledge questions such as ARC, OpenBookQA, and HellaSwag.
+
+On this 16 GB laptop the 4B checkpoint in bf16 does not stay fully resident, and one ticket took about three minutes. The 2B and 0.8B entries are the ones that fit in RAM in float32, which is the library's fast CPU path.
 
 ## Use the demo
 

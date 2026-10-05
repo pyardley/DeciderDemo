@@ -1,8 +1,6 @@
-"""Local demo server for Decider 4B · v2.
+"""Local demo server for a configurable Decider checkpoint.
 
-Serves the page on http://127.0.0.1:8787 and scores tickets with Mapika's
-one-pass decision model. The weights are the checkpoint Jev Arena pins for
-the entrant named Decider 4B · v2.
+Serves the page on http://127.0.0.1:8787. The active model is demo/models.json.
 """
 
 from __future__ import annotations
@@ -17,19 +15,43 @@ from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = Path(__file__).resolve().parent / "static"
-PIN = json.loads((Path(__file__).resolve().parent / "model.json").read_text(encoding="utf-8"))
-MODEL_DIR = ROOT / "models" / "decider-4b-v2"
+CATALOG_PATH = Path(__file__).resolve().parent / "models.json"
 HOST = "127.0.0.1"
 PORT = 8787
+DTYPES = {
+    "bfloat16": "bfloat16",
+    "float32": "float32",
+    "float16": "float16",
+}
+
+
+def load_selection() -> tuple[str, dict]:
+    catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    model_id = catalog["active"]
+    try:
+        spec = catalog["models"][model_id]
+    except KeyError as exc:
+        known = ", ".join(catalog.get("models", {}))
+        raise SystemExit(f"demo/models.json active id {model_id!r} is not in the catalog ({known}).") from exc
+    dtype = spec.get("dtype", "float32")
+    if dtype not in DTYPES:
+        raise SystemExit(f"demo/models.json dtype {dtype!r} for {model_id} must be one of {', '.join(DTYPES)}.")
+    return model_id, spec
+
+
+MODEL_ID, SPEC = load_selection()
+MODEL_DIR = ROOT / "models" / SPEC["directory"]
 
 _lock = threading.Lock()
 _state = {
     "status": "loading",
     "error": None,
-    "name": PIN["name"],
-    "revision": PIN["revision"],
-    "device": None,
-    "dtype": None,
+    "id": MODEL_ID,
+    "name": SPEC["name"],
+    "repo": SPEC["repo"],
+    "revision": SPEC["revision"],
+    "device": SPEC.get("device", "cpu"),
+    "dtype": SPEC.get("dtype", "float32"),
 }
 
 
@@ -38,7 +60,7 @@ def _load() -> None:
         _state["status"] = "error"
         _state["error"] = (
             "Weights are not downloaded yet. Run Start-Demo.ps1 so it can fetch "
-            f"{PIN['repo']} at {PIN['revision'][:12]}."
+            f"{SPEC['repo']} at {SPEC['revision'][:12]}."
         )
         return
     try:
@@ -46,20 +68,19 @@ def _load() -> None:
         from decider.infer import Decider
 
         torch.set_num_threads(6)
-        # The 1650 Ti has 4 GB, and the published weights are 8.4 GB in bf16.
-        # CPU float32, the library default, would be about 17 GB and will not
-        # sit in 16 GB of RAM. bf16 keeps the published footprint.
+        dtype = getattr(torch, SPEC.get("dtype", "float32"))
         decider = Decider(
             str(MODEL_DIR),
-            device="cpu",
-            dtype=torch.bfloat16,
+            device=SPEC.get("device", "cpu"),
+            dtype=dtype,
             use_graphs=False,
         )
         _state["decider"] = decider
         _state["status"] = "ready"
-        _state["name"] = getattr(decider, "name", PIN["name"])
+        _state["name"] = SPEC["name"]
+        _state["runtime_name"] = getattr(decider, "name", SPEC["name"])
         _state["device"] = str(decider.dev)
-        _state["dtype"] = "bfloat16"
+        _state["dtype"] = SPEC.get("dtype", "float32")
         _state["temperature"] = decider.T
     except Exception:
         _state["status"] = "error"

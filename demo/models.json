@@ -1,0 +1,29 @@
+{
+  "active": "4b-v2",
+  "models": {
+    "4b-v2": {
+      "name": "Decider 4B · v2",
+      "repo": "Mapika/decider-4b",
+      "revision": "49564ddcfccafb6db563eb757c1d41e6c78dcb56",
+      "directory": "decider-4b-v2",
+      "device": "cpu",
+      "dtype": "bfloat16"
+    },
+    "2b": {
+      "name": "Decider 2B",
+      "repo": "Mapika/decider-2b",
+      "revision": "533964dae8be954c5b5e19fa4948e48408094c1e",
+      "directory": "decider-2b",
+      "device": "cpu",
+      "dtype": "float32"
+    },
+    "0.8b": {
+      "name": "Decider 0.8B",
+      "repo": "Mapika/decider-0.8b",
+      "revision": "a0a01d6f8135298f400a8c856b355793012ae971",
+      "directory": "decider-0.8b",
+      "device": "cpu",
+      "dtype": "float32"
+    }
+  }
+}

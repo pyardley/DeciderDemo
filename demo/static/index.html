@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Decider 4B · v2</title>
+  <title>Decider</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <header class="top">
     <div>
       <p class="eyebrow">Mapika · one forward pass · no generated text</p>
-      <h1>Decider 4B · v2</h1>
+      <h1 id="model-name">Decider</h1>
     </div>
     <p id="status" class="status" data-state="loading">Loading weights…</p>
   </header>
@@ -41,9 +41,9 @@
   <footer>
     <p>
       Checkpoint <code id="revision"></code> from
-      <a href="https://huggingface.co/Mapika/decider-4b">Mapika/decider-4b</a>,
-      the pin Jev Arena uses for this entrant.
-      Ollama cannot load it: the model is served by Decider, not a GGUF chat model.
+      <a id="model-link" href="https://huggingface.co/Mapika/decider-4b">Mapika/decider-4b</a>.
+      Change it in <code>demo/models.json</code>.
+      Decider is served by its own runtime. The weights are not in the Ollama library.
     </p>
   </footer>
 

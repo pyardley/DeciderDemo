@@ -1,11 +1,34 @@
-# Download the Jev Arena pin of Decider 4B · v2 and open the local demo.
+# Download the active Decider checkpoint and open the local demo.
+# .\Start-Demo.ps1
+# .\Start-Demo.ps1 -Model 2b
+param(
+    [string]$Model
+)
+
 $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 Set-Location $Root
 
-$Pin = Get-Content -Raw (Join-Path $Root "demo\model.json") | ConvertFrom-Json
-$ModelDir = Join-Path $Root "models\decider-4b-v2"
+$CatalogPath = Join-Path $Root "demo\models.json"
+$Catalog = Get-Content -Raw $CatalogPath | ConvertFrom-Json
+$Known = @($Catalog.models.PSObject.Properties.Name)
+if ($Model) {
+    if ($Known -notcontains $Model) {
+        throw "Unknown model '$Model'. Choose one of: $($Known -join ', ')"
+    }
+    $Updated = [System.IO.File]::ReadAllText($CatalogPath) -replace '"active"\s*:\s*"[^"]*"', ('"active": "' + $Model + '"')
+    [System.IO.File]::WriteAllText($CatalogPath, $Updated)
+    $Catalog = $Updated | ConvertFrom-Json
+}
+
+$ActiveId = $Catalog.active
+$Pin = $Catalog.models.$ActiveId
+if (-not $Pin) {
+    throw "demo/models.json has no entry for active model '$ActiveId'."
+}
+$ModelDir = Join-Path $Root ("models\" + $Pin.directory)
 $Python = Join-Path $Root ".venv\Scripts\python.exe"
+Write-Host "Model: $($Pin.name) ($ActiveId)"
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     throw "uv is not on PATH. Install it from https://docs.astral.sh/uv/ and run this script again."
@@ -21,12 +44,25 @@ uv pip install --python $Python torch --index-url https://download.pytorch.org/w
 uv pip install --python $Python "decider-ai[serve]"
 
 if (-not (Test-Path (Join-Path $ModelDir "model.safetensors"))) {
-    Write-Host "Downloading $($Pin.repo) @ $($Pin.revision) (about 8.4 GB)..."
+    Write-Host "Downloading $($Pin.repo) @ $($Pin.revision)..."
     & $Python -c @"
 from huggingface_hub import snapshot_download
 snapshot_download('$($Pin.repo)', revision='$($Pin.revision)', local_dir=r'$ModelDir')
 print('downloaded')
 "@
+}
+
+$Busy = $false
+try {
+    $Probe = New-Object System.Net.Sockets.TcpClient
+    $Probe.Connect("127.0.0.1", 8787)
+    $Probe.Close()
+    $Busy = $true
+} catch {
+    $Busy = $false
+}
+if ($Busy) {
+    throw "Port 8787 is already in use. Stop the running demo with Ctrl+C in its window, then run this script again."
 }
 
 $Server = Start-Process -FilePath $Python -ArgumentList (Join-Path $Root "demo\server.py") -WorkingDirectory $Root -PassThru -NoNewWindow
